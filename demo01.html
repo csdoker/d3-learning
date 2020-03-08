@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <div id="wrapper"></div>
+    <script src="https://d3js.org/d3.v5.min.js"></script>
+    <script>
+        {
+            const wrapper = document.querySelector('#wrapper')
+            const data = [4, 8, 15, 16, 23, 42]
+
+            // const div = d3.create("div");
+            // div.html("Hello, world!");
+            // console.log(div.node());
+
+            // const span = d3.create("span")
+            //     .style("color", "white")
+            //     .style("background-color", "black")
+            //     .html("Hello, world!")
+            // .node()
+            // console.log(span)
+            // wrapper.append(span)
+
+            // const table = d3.create("table");
+            // const tbody = table.append("tbody");
+            // tbody.append("tr").append("td").text("First!");
+            // tbody.append("tr").append("td").text("Second.");
+            // tbody.append("tr").append("td").text("Third.");
+            // wrapper.append(table.node())
+
+            // const div = d3.create("div")
+            //     .style("font", "10px sans-serif")
+            //     .style("text-align", "right")
+            //     .style("color", "white");
+            // div.selectAll("div")
+            //     .data(data)
+            //     .join("div")
+            //     .style("background", "steelblue")
+            //     .style("padding", "3px")
+            //     .style("margin", "1px")
+            //     .style("width", d => `${d * 10}px`)
+            //     .text(d => d);
+            // wrapper.append(div.node())
+
+
+            // 矩形的高度
+            let dataset = [50, 43, 120, 87, 99, 167, 142];
+
+            // 创建svg 画布的宽高
+            let width = 400;
+            let height = 400;
+
+            let svg = d3.select('body').append('svg');
+            svg.attr('width', width)
+                .attr('height', height);
+
+            // 定义上下边距
+            let padding = {
+                top: 20,
+                bottom: 20,
+                right: 20,
+                left: 20
+            };
+
+            // 矩形所占据的宽度， 包括空白，单位为像素
+            let rectStep = 35;
+
+            // 矩形所餐具的宽度， 不包括空白， 单位像素
+            let rectWidth = 30;
+
+            // 通过dataset给SVG 添加矩形和文字。
+            let rect = svg.selectAll('rect');
+            rect.data(dataset)                                          // 绑定数据
+                .enter()
+                .append('rect')                                         // 添加元素
+                .attr('fill', 'steelblue')                 // 设置颜色
+                .attr('x', function (d, i) {                // 设置x 坐标
+                    return padding.left + i * rectStep;
+                })
+                .attr('y', function (d) {                    // 设置y 坐标
+                    console.log(d);
+                    return height - d - padding.bottom;
+                })
+                .attr('width', rectWidth)                       // 设置矩形宽度
+                .attr('height', function (d) {            // 设置矩形高度
+                    return d
+                });
+                
+            // 给矩形添加文字
+            let text = svg.selectAll('text')
+                .data(dataset)
+                .enter()
+                .append('text')
+                .attr('fill', 'white')
+                .attr('font-size', '14px')
+                .attr('text-anchor', 'middle')
+                .attr('x', function (d, i) {
+                    return padding.left + i * rectStep;
+                })
+                .attr('y', function (d) {
+                    return height - d - padding.bottom;
+                })
+                .attr('dx', rectWidth/2)
+                .attr('dy', '1em')
+                .text(function(d) {
+                    return d
+                })
+        }
+    </script>
+</body>
+</html>
