@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <script src="https://d3js.org/d3.v5.min.js"></script>
+    <script>
+      const dataset = [50, 43, 120, 87, 99, 167, 142, 64, 21, 78, 29]
+      const width = 1000
+      const height = 400
+
+      let svg = d3.select('body').append('svg')
+      svg.attr('width', width).attr('height', height)
+
+      let padding = {
+        top: 20,
+        bottom: 20,
+        right: 30,
+        left: 30
+      }
+
+      const x = d3
+        .scaleBand()
+        .domain(d3.range(dataset.length))
+        .rangeRound([0, width - padding.left - padding.right])
+
+      const y = d3
+        .scaleLinear()
+        .domain([0, d3.max(dataset)])
+        .range([height - padding.top - padding.bottom, 0])
+    
+        const xAxis = g =>
+          g
+            .attr('transform', `translate(0,${height - padding.bottom})`)
+            .call(d3.axisBottom(x).tickSizeOuter(0))
+
+        const yAxis = g =>
+          g
+            .attr('transform', `translate(${padding.left},0)`)
+            .call(d3.axisLeft(y).ticks(null, '%'))
+            .call(g => g.select('.domain').remove())
+
+
+      let rectPadding = 4
+
+      let rect = svg.selectAll('rect')
+      rect
+        .data(dataset)
+        .enter()
+        .append('rect')
+        .attr('fill', 'steelblue')
+        .attr('x', function (d, i) {
+        //   return padding.left + i * rectStep
+          return padding.left + x(d) + rectPadding / 2
+        })
+        .attr('y', function (d) {
+          return height - y(d) - padding.bottom
+        })
+        .attr('width', x.bandwidth() - rectPadding)
+        .attr('height', function (d) {
+          return height - padding.top - padding.bottom - y(d)
+        })
+        
+    svg.append('g').call(xAxis)
+
+    svg.append('g').call(yAxis)
+    </script>
+  </body>
+</html>
