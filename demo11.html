@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <div id="wrapper"></div>
+    <script src="https://d3js.org/d3.v5.min.js"></script>
+    <script>
+      const wrapper = document.querySelector('#wrapper')
+      var width = 400
+      var height = 400
+      var padding = { left: 30, right: 30, top: 20, bottom: 20 }
+      var margin = { left: 30, right: 30, top: 20, bottom: 20 }
+      var rectPadding = 4
+
+      //在 body 里添加一个 SVG 画布
+      var svg = d3.create('svg').attr('viewBox', [0, 0, width, height])
+
+      // 定义比例尺
+      var dataset = [10, 20, 30, 40, 33, 24, 12, 5]
+
+      // x轴比例尺
+      let xScale = d3
+        .scaleBand()
+        .domain(d3.range(dataset.length))
+        .range([0, width - padding.left - padding.right])
+
+      // y轴比例尺
+      let yScale = d3
+        .scaleLinear()
+        .domain([0, d3.max(dataset)])
+        .range([height - padding.top - padding.bottom, 0])
+
+      // 定义坐标轴
+      var xAxis = d3.axisBottom(xScale)
+      var yAxis = d3.axisLeft(yScale)
+
+      // 添加矩形元素
+      var rects = svg.selectAll('.rect').data(dataset)
+        .enter()
+        .append('rect')
+        .attr('class', 'rect')
+        .attr('transform', `translate(${padding.left}, ${padding.top})`)
+        .attr('x', (d, i) => xScale(i) + rectPadding / 2)
+        .attr('y', d => yScale(d))
+        .attr('width', d => xScale.bandwidth() - rectPadding)
+        .attr('height', d => height - padding.top - padding.bottom - yScale(d))
+
+      // 添加文字元素
+      let texts = svg
+        .selectAll('.text')
+        .data(dataset)
+        .enter()
+        .append('text')
+        .attr('class', 'text')
+        .attr('transform', `translate(${padding.left}, ${padding.top})`)
+        .attr('x', (d, i) => xScale(i))
+        .attr('y', d => yScale(d))
+        .attr('dx', d => d)
+        .attr('dy', d => 20)
+        .text(d => d)
+
+      // 添加X轴元素
+      svg
+        .append('g')
+        .attr('class', 'axis')
+        .attr(
+          'transform',
+          `translate(${padding.left}, ${height - padding.bottom})`
+        )
+        .call(xAxis)
+      // 添加Y轴元素
+      svg
+        .append('g')
+        .attr('class', 'axis')
+        .attr(
+          'transform',
+          `translate(${padding.left}, ${height - padding.top})`
+        )
+        .call(yAxis)
+
+    wrapper.append(svg.node());
+    </script>
+  </body>
+</html>

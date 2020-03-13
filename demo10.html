@@ -1,177 +1,158 @@
 <!DOCTYPE html>
 <html lang="en">
-
-<head>
+  <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Document</title>
-</head>
+  </head>
 
-<body>
+  <body>
     <div id="wrapper" style="width: 1000px;"></div>
     <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.15/lodash.min.js"></script>
     <script src="https://d3js.org/d3.v5.min.js"></script>
+    <script src="worker.js"></script>
     <script>
-        const wrapper = document.querySelector('#wrapper')
+      const wrapper = document.querySelector('#wrapper')
 
-        const data = []
-        for (let index = 0; index < 100; index++) {
-            data.push({
-                id: index,
-                MTTR: Math.random() * 20,
-                MTTA: Math.random() * 20
-            })
-        }
-        data.columns = ['id', 'MTTR', 'MTTA']
+      let data = []
+      for (let index = 0; index < 100; index++) {
+        data.push({
+          id: _.uniqueId('stack'),
+          MTTR: Math.random() * 20 + 10,
+          MTTA: Math.random() * 20 + 10
+        })
+      }
+      data.columns = ['id', 'MTTR', 'MTTA']
 
-        const margin = {
-            top: 10,
-            right: 0,
-            bottom: 20,
-            left: 0
-        }
-        const width = 1000
-        const height = 100
+      const margin = {
+        top: 10,
+        right: 0,
+        bottom: 20,
+        left: 0
+      }
+      const width = 1000
+      const height = 100
 
-        let series = d3
+      let series = d3
+        .stack()
+        .keys(['MTTR', 'MTTA'])(data)
+        .map(d => (d.forEach(v => (v.key = d.key)), d))
+
+      // console.log(series)
+
+      let color = d3
+        .scaleOrdinal()
+        .domain(series.map(d => d.key))
+        .range(['#0B8800', '#054568'])
+        .unknown('#ccc')
+
+      let x = d3
+        .scaleBand()
+        .domain(data.map(d => d.id))
+        .range([margin.left, width - margin.right])
+
+      let y = d3
+        .scaleLinear()
+        .domain([0, d3.max(series, d => d3.max(d, d => d[1]))])
+        .rangeRound([height - margin.bottom, margin.top])
+
+      const svg = d3.create('svg').attr('viewBox', [0, 0, width, height])
+      const container = svg.append('g').attr('class', 'container')
+      wrapper.append(svg.node())
+
+      //   svg
+      //     .append('g')
+      //     .selectAll('g')
+      //     .data(series)
+      //     .join('g')
+      //     .attr('fill', d => color(d.key))
+      //     .selectAll('rect')
+      //     .data(d => d)
+      //     .join('rect')
+      //     .attr('x', (d, i) => x(i))
+      //     .attr('y', d => y(d[1]))
+      //     .attr('height', d => {
+      //       return y(d[0]) - y(d[1])
+      //     })
+      //     .attr('width', x.bandwidth())
+
+      let step = 0
+      const chart = Object.assign(svg.node(), {
+        update () {
+          series = d3
             .stack()
-            .keys(data.columns.slice(1))(data)
+            .keys(['MTTR', 'MTTA'])(data)
             .map(d => (d.forEach(v => (v.key = d.key)), d))
 
-        console.log(series)
-
-        let color = d3
-            .scaleOrdinal()
+          x.domain(data.map(d => d.id))
+          y.domain([0, d3.max(series, d => d3.max(d, d => d[1]))])
+          color
             .domain(series.map(d => d.key))
             .range(['#0B8800', '#054568'])
             .unknown('#ccc')
-
-        let x = d3
-            .scaleBand()
-            .domain(data.map((d, i) => i))
-            .range([margin.left, width - margin.right])
-
-        let y = d3
-            .scaleLinear()
-            .domain([0, d3.max(series, d => d3.max(d, d => d[1]))])
-            .rangeRound([height - margin.bottom, margin.top])
-
-        const svg = d3.create('svg').attr('viewBox', [0, 0, width, height])
-        wrapper.append(svg.node())
-        
-          svg
-            .append('g')
+          const dx = x.step() * step
+          const t = svg
+            .transition()
+            .ease(d3.easeLinear)
+            .duration(500)
+          const group = container
             .selectAll('g')
-            .data(series)
-            .join('g')
+            .data(series, (d, i) => i)
+            .join(
+              enter => enter.append('g').attr('class', 'stack'),
+              update => update
+            )
             .attr('fill', d => color(d.key))
+          group
             .selectAll('rect')
-            .data(d => d)
-            .join('rect')
-            .attr('x', (d, i) => x(i))
+            .data(
+              d => d,
+              d => {
+                return d.data.id
+              }
+            )
+            .join(
+              enter =>
+                enter
+                  .append('rect')
+                  .attr('x', d => x(d.data.id) + dx)
+                  .attr('y', d => y(0))
+                  .attr('width', x.bandwidth() + 1),
+              update =>
+                update.attr('x', (d, i) => {
+                  return x(d.data.id) + dx
+                }),
+              exit =>
+                exit
+                  .transition(t)
+                  .remove()
+                  .attr('y', y(0))
+                  //   .attr('y', d => y(d[0]))
+                  .attr('height', 0)
+            )
+            .transition(t)
             .attr('y', d => y(d[1]))
-            .attr('height', d => {
-                // debugger;
-                return y(d[0]) - y(d[1]);
-            })
-            .attr('width', x.bandwidth())
-        
-            
+            .attr('height', d => y(d[0]) - y(d[1]))
 
-        // const delay = 200
-        // let step = 1
-        // const chart = Object.assign(svg.node(), {
-        //     update(index) {
-        //         // console.log(22222222)
-        //         // const dx = x.step() * (data.length - index) / step
-        //         const t = svg
-        //             .transition()
-        //             .ease(d3.easeLinear)
-        //             .duration(delay)
-        //         const group = svg.selectAll('g').data(series).join('g')
-        //             .attr('fill', d => color(d.key));
-        //         const rect =
-        //             group.selectAll('rect').data(d => d)
-        //             .join(enter => enter.append('rect')
-        //                 .attr('x', (d, i) => x(i))
-        //                 .attr('y', d => y(d[1]))
-        //                 .attr('height', d => y(d[0]) - y(d[1]))
-        //                 .attr('width', x.bandwidth()),
-        //                 update => update,
-        //                 exit =>
-        //                 exit.call(rect =>
-        //                     rect
-        //                     .transition(t)
-        //                     .remove()
-        //                     .attr('y', y(0))
-        //                     .attr('height', 0)
-        //                 ));
-        //         // rect = group.selectAll('rect').data(series).join(
-        //         //   enter =>
-        //         //     enter
-        //         //       .append('rect')
-        //         //       .attr('fill', d => color(d.key))
-        //         //       .attr('x', (d, i) => x(i))
-        //         //       .attr('y', d => y(d[1]))
-        //         //       .attr('height', d => {
-        //         //         debugger;
-        //         //           return y(d[0]) - y(d[1]);
-        //         //       })
-        //         //       .attr('width', x.bandwidth()),
-        //         //   update => update,
-        //         //   exit =>
-        //         //     exit.call(rect =>
-        //         //       rect
-        //         //         .transition(t)
-        //         //         .remove()
-        //         //         .attr('y', y(0))
-        //         //         .attr('height', 0)
-        //         //     )
-        //         // )
+          container.transition(t).attr('transform', `translate(${-dx},0)`)
+        }
+      })
+      
+      chart.update()
 
-        //         // rect
-        //             // .transition(t)
-        //             // .attr('y', d => y(d[1]))
-        //             // .attr('height', d => y(0) - y(d[1]))
-
-        //         group.transition(t).attr('transform', `translate(${-x.bandwidth() * step},0)`)
-        //     }
-        // })
-        
-
-        // wrapper.append(svg.node())
-
-        // // chart.update()
-        // setInterval(() => {
-        //     chart.update()
-        //     data.push({
-        //         id: data.length,
-        //         MTTR: Math.random() * 20,
-        //         MTTA: Math.random() * 20
-        //     })
-        //     step += 1
-        //     // series = d3
-        //     //     .stack()
-        //     //     .keys(data.columns.slice(1))(data)
-        //     //     .map(d => (d.forEach(v => (v.key = d.key)), d))
-        //     // x = d3
-        //     // .scaleBand()
-        //     // .domain(data.map((d, i) => i))
-        //     // .range([margin.left, width - margin.right])
-        //     // y = d3
-        //     // .scaleLinear()
-        //     // .domain([0, d3.max(series, d => d3.max(d, d => d[1]))])
-        //     // .rangeRound([height - margin.bottom, margin.top])
-        //     // color = d3
-        //     // .scaleOrdinal()
-        //     // .domain(series.map(d => d.key))
-        //     // .range(['#0B8800', '#054568'])
-        //     // .unknown('#ccc')
-            
-        // }, 200)
-
-            
+      setInterval(() => {
+        data = data.slice(1)
+        data.push({
+          id: _.uniqueId('stack'),
+          MTTR: Math.random() * 20 + 10,
+          MTTA: Math.random() * 20 + 10
+        })
+        step += 1
+        console.log(step)
+        if (!document.hidden) {
+            chart.update();
+        }
+      }, 1000)
     </script>
-</body>
-
+  </body>
 </html>
