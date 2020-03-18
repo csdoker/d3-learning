@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <script src="https://d3js.org/d3.v5.min.js"></script>
+    <script>
+      const data = [10, 15, 30, 50, 80, 65, 55, 30, 20, 10, 8];
+
+      function render(data) {
+        const bars = d3
+          .select("body")
+          .selectAll("div.h-bar")
+          .data(data);
+
+        // const bars = d3
+        //   .select("body")
+        //   .selectAll("div.h-bar")
+        //   .data(data).join('div').attr("class", "h-bar");
+
+        // bars
+        //   .enter() // <- E
+        //   .append("div") // <- F
+        //   .attr("class", "h-bar") // <- G
+        //   .merge(bars) // Enter + Update <- H
+        //   .style("width", function(d) {
+        //     return d * 3 + "px"; // <- I
+        //   })
+        //   .text(function(d) {
+        //     return d; // <- J
+        //   });
+
+
+        bars.join(
+            enter =>
+                enter
+                    .append("div")
+                    .attr("class", "h-bar")
+                    .style('width', d => `${d * 3}px`)
+                    .text(d => d),
+            update =>
+                update
+                    .style('width', d => `${d * 3}px`)
+                    .text(d => d),
+            exit =>
+                exit
+                    .remove()
+        )
+      }
+
+      setInterval(() => {
+        data.shift();
+        data.push(Math.round(Math.random() * 100));
+        render(data);
+      }, 1500);
+
+      render(data);
+    </script>
+  </body>
+</html>
